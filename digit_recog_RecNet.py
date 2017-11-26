@@ -154,12 +154,12 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))*100
 # RUN MODEL
 #############################################
 print('Graph created. Looking for model...')
-max_steps = 2 #20000
-steps_CNN = 2
+max_steps = 10 #20
+steps_CNN = 10
 
 with tf.Session() as sess:
   # Save or restore model
-  saver = tf.train.Saver()
+  saver = tf.train.Saver(tf.global_variables())
   my_file = Path("modelsRecNet/RecNet_model_%s_%s_%s.meta" % (steps_CNN,max_steps,eta))
 
   # CHECK IF MODEL EXISTS
@@ -168,9 +168,9 @@ with tf.Session() as sess:
       saver.restore(sess, "modelsRecNet/RecNet_model_%s_%s_%s" % (steps_CNN,max_steps,eta))
       print("Model restored.")
 
-      answer = input("Keep training restored model? (Y/N)")
+      answer = raw_input("Keep training restored model? (Y/N)")
       if answer in ['y', 'Y', 'yes', 'Yes', 'YES']:
-            sum_steps_ = input("Number of extra training steps:")
+            sum_steps_ = raw_input("Number of extra training steps:")
             sum_steps = sess.run(tf.constant(eval(sum_steps_)))
             for step in range(sum_steps):
               batch = mnist.train.next_batch(32)
@@ -256,5 +256,8 @@ with tf.Session() as sess:
 
           save_path = saver.save(sess, "modelsRecNet/RecNet_model_%s_%s_%s" % (steps_CNN,max_steps,eta))
           print("Model saved in file: %s" % save_path)
+          loss1_test = sess.run(tf.reduce_mean(
+              tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)),feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1, hconv1: hconv1_test, hconv2: hconv2_test, hfc1: hfc1_test})
+          print("Digit prediction (CNN) loss: %s" % loss1_test)
       else:
           print("Cannot find CNN model trained for %s steps" % steps_CNN)

@@ -1,7 +1,7 @@
 ##########################################################
 # DIGIT RECOGNITION - NANET STUDY
 ##########################################################
-# Plots the original and reconstructed digit
+
 
 #############################################
 # IMPORT AND READ DATA
@@ -102,11 +102,6 @@ b_fc2 = bias_variable([10]) #10 variables
 
 y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
-
-
-
-
-
 #############################################
 # RecNet
 #############################################
@@ -139,32 +134,30 @@ b_fcout = bias_variable([784])
 
 h_fcout = tf.nn.sigmoid(tf.matmul(h_fcX, W_fcout) + b_fcout)
 
-
 #############################################
 # COST FUNCTION (CROSS-ENTROPY)
 #############################################
 y_ = tf.placeholder(tf.float32, [None, 10])
-# Loss 1 (cross-entropy)
+# Loss CNN
 loss1 = tf.reduce_mean(
     tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
-
-# Loss 2 (cross-entropy)
+# Loss RecNet
 loss2 = tf.reduce_mean(
-    tf.losses.mean_squared_error(labels=x, predictions=h_fcout))
+    tf.nn.softmax_cross_entropy_with_logits(labels=x, logits=h_fcout))
 
-loss = loss1 + 0.01*loss2
+loss = loss1+loss2
 
 #############################################
 # TRAINING
 #############################################
 # The argument of the gradient descent is the learning rate:
-eta = 1e-3
+eta = 1e-4
 train_step = tf.train.AdamOptimizer(eta).minimize(loss)
 
 #############################################
 # TEST
 #############################################
-
+# THIS DEFINITION OF ACCURACY MAKES NO SENSE
 correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))*100
 
@@ -172,16 +165,17 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))*100
 # RUN MODEL
 #############################################
 
-max_steps = 40000 # 5
+max_steps = 10 #20
+steps_CNN = 10 #1000
 
 with tf.Session() as sess:
     # Save or restore model
     saver = tf.train.Saver()
-    my_file = Path("modelsNaNet/NANet_model_%s_%s.meta" % (max_steps,eta))
+    my_file = Path("modelsRecNet/RecNet_model_%s_%s_%s.meta" % (steps_CNN,max_steps,eta))
 
     if my_file.is_file():
       # file exists
-      saver.restore(sess, "modelsNaNet/NANet_model_%s_%s" % (max_steps,eta))
+      saver.restore(sess, "modelsRecNet/RecNet_model_%s_%s_%s" % (steps_CNN,max_steps,eta))
       print("Model restored.")
 
       ########################################
@@ -195,8 +189,8 @@ with tf.Session() as sess:
           # Get sample from the MNIST data set:
           x_new, onehot = mnist.train.next_batch(1)
           y_new = sess.run(tf.argmax(onehot,1))
-          #print(digit)
-          #print(y_new)
+          print(digit)
+          print(y_new)
           if y_new == digit:
               # Calculate solution:
               y_solution = sess.run(tf.argmax(y_conv,1), feed_dict={x: x_new, keep_prob: 1})

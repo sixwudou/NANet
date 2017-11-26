@@ -134,9 +134,9 @@ loss1 = tf.reduce_mean(
 
 # Loss 2 (cross-entropy)
 loss2 = tf.reduce_mean(
-    tf.nn.softmax_cross_entropy_with_logits(labels=x, logits=h_fcout))
+    tf.losses.mean_squared_error(labels=x, predictions=h_fcout))
 
-loss = loss1 + loss2
+loss = loss1 + 0.01*loss2
 
 #############################################
 # TRAINING
@@ -156,7 +156,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))*100
 # RUN MODEL
 #############################################
 
-max_steps = 10000 #20000
+max_steps = 40000 #20000
 
 with tf.Session() as sess:
   # Save or restore model

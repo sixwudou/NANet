@@ -149,11 +149,11 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))*100
 # RUN MODEL
 #############################################
 
-max_steps = 2 #20000
+max_steps = 10 #20000
 
 with tf.Session() as sess:
   # Save or restore model
-  saver = tf.train.Saver()
+  saver = tf.train.Saver(tf.global_variables())
   my_file = Path("modelsCNN/digit_recog_CNN_model%s.meta" % max_steps)
 
   if my_file.is_file():
@@ -168,7 +168,7 @@ with tf.Session() as sess:
             for step in range(sum_steps):
               batch = mnist.train.next_batch(32)
 
-              if step % 1000 == 0:
+              if step % 5000 == 0:
                 train_accuracy = accuracy.eval(feed_dict={
                     x: batch[0], y_: batch[1], keep_prob: 1.0})
                 test_accuracy = accuracy.eval(feed_dict={
@@ -197,7 +197,7 @@ with tf.Session() as sess:
       for step in range(max_steps):
         batch = mnist.train.next_batch(32)
 
-        if step % 1000 == 0:
+        if step % 5000 == 0:
           train_accuracy = accuracy.eval(feed_dict={
               x: batch[0], y_: batch[1], keep_prob: 1.0})
           test_accuracy = accuracy.eval(feed_dict={

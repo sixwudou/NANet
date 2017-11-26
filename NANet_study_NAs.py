@@ -1,7 +1,7 @@
 ##########################################################
-# DIGIT RECOGNITION - NANET STUDY
+# DIGIT RECOGNITION - NANET STUDY NeuroActivations
 ##########################################################
-# Plots the original and reconstructed digit
+# Plots the original and reconstructed digit, and also the NAs
 
 #############################################
 # IMPORT AND READ DATA
@@ -52,7 +52,35 @@ def display_digit(x_new, y_new, y_solution, reconstr):
         success = 'NO'
     plt.title('Actual label: %d Predicted label: %d Success: %s' % (y_new, y_solution, success))
     plt.imshow(image, cmap=plt.get_cmap('gray_r'))
-    plt.show()
+
+def display_NAs(h):
+    N0 = tf.cast(h.shape[3],tf.float32)
+    N = sess.run(tf.to_int32(tf.ceil(tf.sqrt(N0))))
+    print('Total number of slices order (subplots grid): %dx%d' % (N,N))
+    f, axarr = plt.subplots(N,N)
+
+    p = 0
+
+    if N == 1:
+        slc = sess.run(tf.reduce_mean(h[:,:,:,p],axis=0))
+        plt.imshow(slc, cmap=plt.get_cmap('gray_r'))
+
+    else:
+        for i in range(N):
+            for j in range(N):
+                # Empty plot white when out of slices to display
+                if p >= h.shape[3]:
+                    slc = np.ones((h.shape[1],h.shape[3],3))
+                else:
+                    if h.shape[0] == 8:
+                        slc = h[:,:,:,p]
+                        axarr[i,j].imshow(slc)
+                    else:
+                        slc = sess.run(tf.reduce_mean(h[:,:,:,p],axis=0))
+                        #print(slc.shape)
+                        axarr[i,j].imshow(slc,cmap='Reds')
+                axarr[i,j].axis('off')
+                p+=1
 
 #############################################
 # CNN
@@ -203,7 +231,26 @@ with tf.Session() as sess:
               # Reconstruction of image:
               reconstr = sess.run(h_fcout, feed_dict={x: x_new, keep_prob: 1})
 
+              # Display original and reconstructed digit
               display_digit(x_new, y_new, y_solution, reconstr)
+
+              # Display NeuroActivations
+              hc1 = sess.run(h_conv1, feed_dict={x: x_new, keep_prob: 1})
+              #print(hc1.shape)
+              display_NAs(hc1)
+
+              hc2 = sess.run(h_conv2, feed_dict={x: x_new, keep_prob: 1})
+              display_NAs(hc2)
+
+              hfc1 = sess.run(h_fc1_drop, feed_dict={x: x_new, keep_prob: 1})
+              hfc1 = tf.reshape(hfc1, [1,8,128,1])
+              print(hfc1.shape)
+              print(sess.run(tf.reduce_max(hfc1)))
+              display_NAs(hfc1)
+
+              # Plot everything
+              plt.show()
+
 
               counter = 1
 

@@ -1,7 +1,8 @@
 ##########################################################
-# DIGIT RECOGNITION - NANET STUDY
+# DIGIT RECOGNITION - NANET STUDY NeuroActivations selection
 ##########################################################
-# Plots the original and reconstructed digit
+# Plots the original and reconstructed digit, and also
+#the NAs that THE USER SPECIFIED
 
 #############################################
 # IMPORT AND READ DATA
@@ -52,7 +53,35 @@ def display_digit(x_new, y_new, y_solution, reconstr):
         success = 'NO'
     plt.title('Actual label: %d Predicted label: %d Success: %s' % (y_new, y_solution, success))
     plt.imshow(image, cmap=plt.get_cmap('gray_r'))
-    plt.show()
+
+def display_NAs(h):
+    N0 = tf.cast(h.shape[3],tf.float32)
+    N = sess.run(tf.to_int32(tf.ceil(tf.sqrt(N0))))
+    print('Total number of slices order (subplots grid): %dx%d' % (N,N))
+    f, axarr = plt.subplots(N,N)
+
+    p = 0
+
+    if N == 1:
+        slc = sess.run(tf.reduce_mean(h[:,:,:,p],axis=0))
+        plt.imshow(slc, cmap=plt.get_cmap('gray_r'))
+
+    else:
+        for i in range(N):
+            for j in range(N):
+                # Empty plot white when out of slices to display
+                if p >= h.shape[3]:
+                    slc = np.ones((h.shape[1],h.shape[3],3))
+                else:
+                    if h.shape[0] == 8:
+                        slc = h[:,:,:,p]
+                        axarr[i,j].imshow(slc)
+                    else:
+                        slc = sess.run(tf.reduce_mean(h[:,:,:,p],axis=0))
+                        #print(slc.shape)
+                        axarr[i,j].imshow(slc,cmap='Reds')
+                axarr[i,j].axis('off')
+                p+=1
 
 #############################################
 # CNN
@@ -110,6 +139,11 @@ y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 #############################################
 # RecNet
 #############################################
+# Inputs:
+hconv1 = tf.placeholder(tf.float32, [None, 28,28,32], name='hconv1')
+hconv2 = tf.placeholder(tf.float32, [None, 14,14,64], name='hconv2')
+hfc1 = tf.placeholder(tf.float32, [None, 1024], name='hfc1')
+
 # First layer: 3 fc layers of 512 units
 W_fcA = weight_variable([28*28*32, 512])
 b_fcA = bias_variable([512])
@@ -118,12 +152,12 @@ b_fcB = bias_variable([512])
 W_fcC = weight_variable([1024, 512])
 b_fcC = bias_variable([512])
 
-h_conv1_flat = tf.reshape(h_conv1, [-1, 28*28*32])
-h_conv2_flat = tf.reshape(h_conv2, [-1, 14*14*64])
+h_conv1_flat = tf.reshape(hconv1, [-1, 28*28*32])
+h_conv2_flat = tf.reshape(hconv2, [-1, 14*14*64])
 
 h_fcA = tf.nn.relu(tf.matmul(h_conv1_flat, W_fcA) + b_fcA)
 h_fcB = tf.nn.relu(tf.matmul(h_conv2_flat, W_fcB) + b_fcB)
-h_fcC = tf.nn.relu(tf.matmul(h_fc1_drop, W_fcC) + b_fcC)
+h_fcC = tf.nn.relu(tf.matmul(hfc1, W_fcC) + b_fcC)
 
 # Second layer: fc layer of 1024 units
 h_fcABC = tf.concat([h_fcA, h_fcB, h_fcC], 1)
@@ -198,12 +232,46 @@ with tf.Session() as sess:
           #print(digit)
           #print(y_new)
           if y_new == digit:
+
+              ########################################
+              # GET A PARTICULAR DIGIT
+              ########################################
+              xx_select = tf.reshape(x_new, [-1, 28, 28, 1])
+              hconv1_select = sess.run(tf.nn.relu(conv2d(xx_select, W_conv1) + b_conv1))
+              hpool1_select = sess.run(max_pool_2x2(hconv1_select))
+              hconv2_select = sess.run(tf.nn.relu(conv2d(hpool1_select, W_conv2) + b_conv2))
+              hpool2_select = sess.run(max_pool_2x2(hconv2_select))
+              hfc1_select = sess.run(tf.nn.relu(tf.matmul(tf.reshape(hpool2_select, [-1, 7*7*64]), W_fc1) + b_fc1))
+
+              hconv1_select = hconv1_select
+              hconv2_select = hconv2_select*0
+              hfc1_select = hfc1_select*0 #sess.run(tf.square(hfc1_select))*0
+
               # Calculate solution:
               y_solution = sess.run(tf.argmax(y_conv,1), feed_dict={x: x_new, keep_prob: 1})
               # Reconstruction of image:
-              reconstr = sess.run(h_fcout, feed_dict={x: x_new, keep_prob: 1})
+              reconstr = sess.run(h_fcout, feed_dict={x: x_new, keep_prob: 1, hconv1: hconv1_select, hconv2: hconv2_select, hfc1: hfc1_select})
 
+              # Display original and reconstructed digit
               display_digit(x_new, y_new, y_solution, reconstr)
+
+              # Display NeuroActivations
+              hc1 = hconv1_select
+              #print(hc1.shape)
+              display_NAs(hc1)
+
+              hc2 = hconv2_select
+              display_NAs(hc2)
+
+              hfc1 = hfc1_select
+              hfc1 = tf.reshape(hfc1, [1,8,128,1])
+              #print(hfc1.shape)
+              #print(sess.run(tf.reduce_max(hfc1)))
+              display_NAs(hfc1)
+
+              # Plot everything
+              plt.show()
+
 
               counter = 1
 
