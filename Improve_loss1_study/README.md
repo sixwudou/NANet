@@ -10,3 +10,5 @@ NANet.py: code called from main.py containing all the functions required.
 NANet_clear.txt and NANet_imported.txt: data files containing step, training loss1, test loss1, test accuracy, training loss2 and test loss2. Each data set is headed by a line containing the input data.
 
 Plot_NANet_clear.py and Plot_NANet_imported.py: plot the results from the text files. It is important that only a single dataset has to be present in the text file (heading line and data lines).
+
+Plots_X_Y_Z folders: they contain the plots of the results contained in the text files. The name of each folder is Plots_LearningRate_TransitionStep_RecF. Plots = no RecNet imported. PlotsImported = RecNet imported (I used a NANet trained for 40k steps with a learning rate of 1e-3). PlotsImportedMap2 = RecNet imported but only the NAs map #2 is used. PlotsNoRecNet = the transition step is never achieved (same as setting RecF=0).
